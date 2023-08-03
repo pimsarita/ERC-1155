@@ -1,0 +1,58 @@
+// Import necessary libraries and interfaces
+pragma solidity ^0.8.0;
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+// Create the contract
+contract MultiApartmentHouse is ERC1155 {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
+
+    // Struct to represent apartment information
+    struct Apartment {
+        string name;
+        uint256 area;
+        uint256 floor;
+        string description;
+    }
+
+    // Array of apartments
+    Apartment[] public apartments;
+
+    // Address of the owner of the house
+    address public owner;
+
+    // Mapping to track ownership of each apartment
+    mapping(uint256 => address) private _apartmentOwners;
+
+    // Contract constructor
+    constructor() ERC1155("https://example.com/api/token/{id}.json") {
+        owner = msg.sender;
+    }
+
+    // Function to add a new apartment to the house
+    function addApartment(string memory name, uint256 area, uint256 floor, string memory description) public {
+        require(msg.sender == owner, "Only the owner can add apartments.");
+        apartments.push(Apartment(name, area, floor, description));
+        _mint(msg.sender, _tokenIdCounter.current(), 1, "");
+        _tokenIdCounter.increment();
+    }
+
+    // Function to transfer ownership of an apartment
+    function transferApartment(uint256 tokenId, address to) public {
+        require(msg.sender == _apartmentOwners[tokenId], "You don't own this apartment.");
+        _transfer(msg.sender, to, tokenId, 1, "");
+        _apartmentOwners[tokenId] = to;
+    }
+
+    // Function to get information about an apartment by tokenId
+    function getApartment(uint256 tokenId) public view returns (string memory, uint256, uint256, string memory) {
+        require(tokenId < apartments.length, "Invalid tokenId");
+        return (
+            apartments[tokenId].name,
+            apartments[tokenId].area,
+            apartments[tokenId].floor,
+            apartments[tokenId].description
+        );
+    }
+}
